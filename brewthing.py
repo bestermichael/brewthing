@@ -1,15 +1,11 @@
-import os
-import glob
-import time
+import os, glob, time, threading
 from flask import Flask, render_template, jsonify, request, g, redirect, url_for, flash
 from flask.ext.socketio import SocketIO, emit
 
 os.system('modprobe w1-gpio')  # Turns on the GPIO module
 os.system('modprobe w1-therm') # Turns on the Temperature module
 
-base_dir = '/sys/bus/w1/devices/'
-device_folder = glob.glob(base_dir + '28*')[0]
-device_file = device_folder + '/w1_slave'
+device_file = '/sys/bus/w1/devices/28-000006281f79/w1_slave'
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -21,8 +17,8 @@ socketio = SocketIO(app)
 
 @app.route('/', methods=['GET'])
 def main():
-    message = read_temp()
-    return render_template('index.html', message = message)
+    start_temp_thread()
+    return render_template('index.html')
 
 
 @socketio.on('connect_event', namespace='/events')
@@ -51,9 +47,9 @@ class TempThread(threading.Thread):
 
     def run(self):
         while True:
-            #print 'Sending Temperature: ' + str(self.get_temp_update())
+            print 'Sending Temperature: ' + str(self.get_temp_update())
             socketio.emit('current_temperature', {'data':'Temperature','current_temp': self.get_temp_update()}, namespace='/events')
-            time.sleep(5)
+            time.sleep(1)
             
             
     def get_temp_update(self):
@@ -61,9 +57,7 @@ class TempThread(threading.Thread):
         return read_temp()
 
 
-    
-if __name__ == '__main__':
-    socketio.run(app)
+
 
 
 
@@ -99,3 +93,8 @@ def read_temp():
         temp_string = lines[1][equals_pos+2:]
         temp_c = float(temp_string) / 1000.0
     return temp_c   
+
+
+    
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0')
