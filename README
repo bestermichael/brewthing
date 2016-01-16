@@ -1,0 +1,33 @@
+Installing Pip:
+-----------------
+1. Install pip:
+    wget https://bootstrap.pypa.io/get-pip.py
+    python get-pip.py
+    
+2. [if using virtual env] sudo pip install virtualenv -or- sudo apt-get install python-virtualenv
+    $ mkdir myproject
+    $ cd myproject
+    $ virtualenv venv
+     New python executable in venv/bin/python
+     Installing distribute............done.
+     
+    . venv/bin/activate
+
+Installing Flask:
+-----------------------
+1. Install Flask
+    $ pip install Flask
+    
+    
+2. Install Flask SocketIO
+
+    $ pip install flask-socketio
+    
+3. Create the application schema by doing the following:
+    $ python
+    >> from brewthing import db
+    >> init_db()
+    >> quit()
+
+4.
+    

@@ -1,6 +1,7 @@
 import os, glob, time, threading
 from flask import Flask, render_template, jsonify, request, g, redirect, url_for, flash
 from flask.ext.socketio import SocketIO, emit
+from sqlite3 import dbapi2 as sqlite3
 from pid import pidpy as PIDController
 from multiprocessing import Process, Pipe, Queue, current_process
 from Queue import Full
@@ -14,6 +15,7 @@ os.system('modprobe w1-therm') # Turns on the Temperature module
 
 device_file = '/sys/bus/w1/devices/28-000006281f79/w1_slave'
 
+DATABASE = 'brewthing.db'
 app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['SECRET_KEY'] = 'Secret!'
@@ -21,6 +23,38 @@ socketio = SocketIO(app)
 
 global current_temp, parent_conn, parent_connB, parent_connC, statusQ, statusQ_B, statusQ_C
 
+
+
+
+
+'''----------------------------'''
+''' Database methods           '''
+'''----------------------------'''
+def connect_db():
+    return sqlite3.connect(app.config['DATABASE'])
+
+
+def init_db():
+    with closing(connect_db()) as db:
+        with app.open_resource('schema.sql', mode='r') as f:
+            db.cursor().executescript(f.read())
+        db.commit()
+
+        
+'''----------------------------'''
+''' FLASK Routes               '''
+'''----------------------------'''
+
+@app.before_request
+def before_request():
+    g.db = connect_db()
+    
+    
+@app.teardown_request
+def teardown_request(exception):
+    db = getattr(g, 'db', None)
+    if db is not None:
+        db.close()
 
 @app.route('/', methods=['GET'])
 def main():
