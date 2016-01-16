@@ -97,7 +97,60 @@ class TempThread(threading.Thread):
     def get_temp_update(self):
         # Read temperature from the Pi
         return read_temp()
+    
+# Thread that does timing.
+class TimerThread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
 
+
+    def run(self):
+        while True:
+            socketio.emit('current_timer_value', {'data': 'Timer', 'remaining_time': self.get_timer_update()},namespace='/events')
+            time.sleep(1)
+
+    def get_timer_update(self):
+        if timer_started == True:
+            remaining_time = calculate_remaining_time()
+
+            if remaining_time > 0:
+                minute, second = divmod(remaining_time, 60)
+                hour, minute = divmod(minute, 60)
+
+                time= str(hour) + ":" + str(minute) + ":" + str(second)
+                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                return time
+            else:
+                global timer_started                                                        
+                timer_started = False
+
+        return "00:00:00"
+
+    
+def start_timer_thread():
+    timer_thread = TimerThread()
+    timer_thread.daemon = True
+    timer_thread.start()
+    
+    
+
+#####################
+# Time helpers
+#####################
+
+# this gets the unix time in seconds.
+def get_time():
+    return datetime.now()
+
+
+def calculate_remaining_time():
+    time_to_end = start_time + end_time
+    current_time = datetime.now()
+    time_left = time_to_end - current_time
+
+    return time_left.seconds
+
+    
     
 ''' ----------------------'''
 ''' PID Processess '''
@@ -387,6 +440,9 @@ def read_temp():
 
     
 if __name__ == '__main__':
+    
+    start_temp_thread()
+    start_timer_thread()
     
     GPIO.setmode(GPIO.BCM)
     ON = 0
